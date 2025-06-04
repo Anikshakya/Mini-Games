@@ -17,6 +17,13 @@ class GameList extends StatelessWidget {
 
   final List<Map<String, dynamic>> gameList = [
     {
+      "name": "Dino Jump 🦖",
+      "desc": "Jump over obstacles",
+      "icon": Icons.directions_run,
+      "gradient_color": [Colors.orange[600]!, Colors.orange[400]!],
+      "route": () => Get.to(() => const DinoGame()),
+    },
+    {
       "name": "Tic Tac Toe ❎⭕",
       "desc": "Classic X and O game",
       "icon": Icons.grid_3x3,
@@ -50,13 +57,6 @@ class GameList extends StatelessWidget {
       "icon": Icons.rocket,
       "gradient_color": [Colors.indigo[600]!, Colors.indigo[400]!],
       "route": () => Get.to(() => const SpaceShooterScreen()),
-    },
-    {
-      "name": "Dino Jump 🦖",
-      "desc": "Jump over obstacles",
-      "icon": Icons.directions_run,
-      "gradient_color": [Colors.orange[600]!, Colors.orange[400]!],
-      "route": () => Get.to(() => const DinoJumpScreen()),
     },
   ];
 

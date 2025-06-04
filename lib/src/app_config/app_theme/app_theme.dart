@@ -7,7 +7,7 @@ class AppTheme {
 
   // Light Theme
   static ThemeData lightTheme({
-    Color seedColor = Colors.green,
+    Color seedColor = Colors.deepPurple,
     double borderRadius = defaultRadius,
     double paddingValue = defaultPadding,
   }) {
@@ -18,6 +18,7 @@ class AppTheme {
       colorScheme: colorScheme,
       brightness: Brightness.light,
       scaffoldBackgroundColor: colorScheme.surface,
+      shadowColor: Colors.black.withOpacity(0.3), // 👈 Added for light theme
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
@@ -58,7 +59,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         selectedItemColor: colorScheme.primary,
-        unselectedItemColor: colorScheme.onSurface.withValues(alpha: 0.6),
+        unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
         backgroundColor: colorScheme.surface,
       ),
     );
@@ -66,7 +67,7 @@ class AppTheme {
 
   // Dark Theme
   static ThemeData darkTheme({
-    Color seedColor = Colors.green,
+    Color seedColor = Colors.deepPurple,
     double borderRadius = defaultRadius,
     double paddingValue = defaultPadding,
   }) {
@@ -77,6 +78,7 @@ class AppTheme {
       colorScheme: colorScheme,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: colorScheme.surface,
+      shadowColor: Colors.white.withOpacity(0.5), // 👈 Added for dark theme
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
@@ -117,7 +119,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         selectedItemColor: colorScheme.primary,
-        unselectedItemColor: colorScheme.onSurface.withValues(alpha: 0.6),
+        unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
         backgroundColor: colorScheme.surface,
       ),
     );

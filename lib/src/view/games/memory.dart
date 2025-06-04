@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:juju_games/src/app_config/app_theme/app_theme.dart';
 import 'package:juju_games/src/app_utils/read_write.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:math';
@@ -232,7 +233,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
+            icon: Icon(Icons.refresh),
             onPressed: initializeGame,
             tooltip: 'New Game',
           ),
@@ -381,33 +382,50 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
     );
   }
 
-  _buildScoreCard(String title, String value, Color color) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+  Widget _buildScoreCard(String title, String value, Color color) {
+  final theme = Theme.of(context);
+  final radius = AppTheme.defaultRadius;
+  final padding = AppTheme.defaultPadding;
+
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: padding / 2, vertical: padding / 2.5),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
+        BoxShadow(
+          color: theme.shadowColor.withOpacity(0.1),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+      border: Border.all(
+        color: color.withOpacity(0.15),
+        width: 1,
       ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.bodySmall,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '$value',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$value',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: color,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   void flipCard(int index) {
     if (processing || cardFlips[index] || index == firstCardIndex || timeLeft <= 0) return;

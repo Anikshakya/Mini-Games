@@ -54,7 +54,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
+            icon: Icon(Icons.refresh),
             onPressed: _resetGame,
             tooltip: 'New Game',
           ),
@@ -263,33 +263,66 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildScoreCard(String title, int value, Color color) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+ Widget _buildScoreCard(String title, int value, Color color) {
+  final theme = Theme.of(context);
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: theme.shadowColor.withOpacity(0.08),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+      border: Border.all(
+        color: theme.colorScheme.outline.withOpacity(0.1),
       ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.bodySmall,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(height: 4),
-          Text(
-            '$value',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '$value',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.star_rounded,
+                size: 18,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _handleTap(int row, int col) {
     if (board[row][col].isEmpty && !gameOver) {

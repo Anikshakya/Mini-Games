@@ -1,296 +1,295 @@
-
-import 'dart:async';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:juju_games/src/app_config/app_theme/theme_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:juju_games/src/app_utils/read_write.dart';
 
-class DinoJumpScreen extends StatefulWidget {
-  const DinoJumpScreen({super.key});
+class DinoGame extends StatefulWidget {
+  const DinoGame({Key? key}) : super(key: key);
 
   @override
-  _DinoJumpScreenState createState() => _DinoJumpScreenState();
+  State<DinoGame> createState() => _DinoGameState();
 }
 
-class _DinoJumpScreenState extends State<DinoJumpScreen> with SingleTickerProviderStateMixin {
-  static const double dinoWidth = 50;
-  static const double dinoHeight = 80;
-  static const double obstacleWidth = 30;
-  static const double obstacleHeight = 50;
-
-  double dinoY = 0.0; // Relative to ground
+class _DinoGameState extends State<DinoGame> with SingleTickerProviderStateMixin {
+  double dinoY = 0;
   double dinoVelocity = 0;
-  double gravity = 0.001;
-  List<double> obstacles = [];
-  Timer? gameLoop;
-  Timer? obstacleTimer;
-  int score = 0;
-  int highScore = 0;
+  double initialGameSpeed = 5;
+  double gameSpeed = 5;
+  double obstacleX = 300;
+  double cloudX = 300;
+  double score = 0;
+  double highScore = 0;
   bool isJumping = false;
-  bool gameOver = false;
-  Random random = Random();
-  late AnimationController controller;
-  late Animation<double> animation;
+  bool isGameOver = false;
+  double dayNightCycle = 0;
+  double obstacleWidth = 30;
+  double obstacleHeight = 50;
+  final Random random = Random();
+
+  late double screenWidth;
+  late double screenHeight;
+  late double groundHeight;
+
+  final double dinoWidth = 50;
+  final double dinoHeight = 50;
+
+  double cloudTop = 100;
+  double cloudSize = 50;
+
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadHighScore();
-    controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
+    _controller = AnimationController(
       vsync: this,
-    );
-    animation = Tween<double>(begin: 0, end: 1).animate(controller)
-      ..addListener(() {
-        setState(() {});
-      });
-    startGame();
-  }
+      duration: const Duration(milliseconds: 16),
+    )..addListener(_update);
 
-  void _loadHighScore() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      highScore = prefs.getInt('dino_high_score') ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHighScore();
+      _startGame();
     });
   }
 
-  void _saveHighScore() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('dino_high_score', highScore);
-  }
-
-  void startGame() {
-    setState(() {
-      dinoY = 0.0;
-      dinoVelocity = 0;
-      obstacles = [];
-      score = 0;
-      gameOver = false;
-      isJumping = false;
-      gameLoop?.cancel();
-      obstacleTimer?.cancel();
-      gameLoop = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-        if (!gameOver) {
-          updateGame();
-        }
-      });
-      obstacleTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-        if (!gameOver) {
-          addObstacle();
-        }
-      });
-    });
-  }
-
-  void jump() {
-    if (!isJumping && !gameOver) {
+  void _loadHighScore() {
+    final saved = read("high_score");
+    if (saved != "") {
       setState(() {
-        isJumping = true;
-        dinoVelocity = -0.025;
-        controller.reset();
-        controller.forward();
+        highScore = double.tryParse(saved.toString()) ?? 0;
       });
     }
   }
 
-  void updateGame() {
+  void _saveHighScore() {
+    write("high_score", highScore.toStringAsFixed(1));
+  }
+
+  void _startGame() {
+    _controller.stop();
     setState(() {
-      dinoVelocity += gravity;
+      dinoY = 0;
+      dinoVelocity = 0;
+      gameSpeed = initialGameSpeed;
+      obstacleX = screenWidth + random.nextDouble() * 200;
+      cloudX = screenWidth + random.nextDouble() * 300;
+      cloudTop = 100 + random.nextDouble() * 100;
+      cloudSize = 40 + random.nextDouble() * 30;
+      score = 0;
+      dayNightCycle = 0;
+      isJumping = false;
+      isGameOver = false;
+    });
+    _controller.reset();
+    _controller.repeat();
+  }
+
+  void _jump() {
+    if (!isJumping && !isGameOver) {
+      setState(() {
+        dinoVelocity = -18;
+        isJumping = true;
+      });
+    } else if (isGameOver) {
+      _startGame();
+    }
+  }
+
+  void _update() {
+    if (isGameOver) {
+      _controller.stop();
+      return;
+    }
+
+    setState(() {
       dinoY += dinoVelocity;
+      dinoVelocity += 0.8;
+
       if (dinoY > 0) {
         dinoY = 0;
         dinoVelocity = 0;
         isJumping = false;
       }
-      obstacles = obstacles.map((obstacle) => obstacle - 0.01).toList();
-      obstacles.removeWhere((obstacle) => obstacle < -0.1);
-      score++;
-      for (var obstacle in obstacles) {
-        final dinoRect = Rect.fromLTWH(
-          100,
-          MediaQuery.of(context).size.height - 100 - dinoHeight + dinoY * 200,
-          dinoWidth,
-          dinoHeight,
-        );
-        final obstacleRect = Rect.fromLTWH(
-          obstacle * MediaQuery.of(context).size.width,
-          MediaQuery.of(context).size.height - 100,
-          obstacleWidth,
-          obstacleHeight,
-        );
-        if (dinoRect.overlaps(obstacleRect)) {
-          gameOver = true;
-          if (score > highScore) {
-            highScore = score;
-            _saveHighScore();
-          }
-          break;
-        }
+
+      obstacleX -= gameSpeed;
+      if (obstacleX < -obstacleWidth) {
+        obstacleX = screenWidth + random.nextDouble() * 200;
+        obstacleHeight = 30 + random.nextDouble() * 40;
       }
+
+      cloudX -= gameSpeed * 0.5;
+      if (cloudX < -cloudSize) {
+        cloudX = screenWidth + random.nextDouble() * 500;
+        cloudTop = 100 + random.nextDouble() * 100;
+        cloudSize = 40 + random.nextDouble() * 30;
+      }
+
+      bool obstacleInRange = obstacleX < dinoWidth + 50 && obstacleX + obstacleWidth > 50;
+      bool dinoOnGround = dinoY >= -10;
+      if (obstacleInRange && dinoOnGround) {
+        isGameOver = true;
+        highScore = max(highScore, score);
+        _saveHighScore();
+        _controller.stop();
+      }
+
+      score += 0.1;
+      gameSpeed = initialGameSpeed + (score / 500);
+      dayNightCycle = (dayNightCycle + 0.0005) % 1;
     });
   }
 
-  void addObstacle() {
-    setState(() {
-      obstacles.add(1.0);
-    });
+  Color _getSkyColor() {
+    if (dayNightCycle < 0.5) {
+      return Color.lerp(Colors.lightBlue, Colors.indigo, dayNightCycle * 2)!;
+    } else {
+      return Color.lerp(Colors.indigo, Colors.lightBlue, (dayNightCycle - 0.5) * 2)!;
+    }
+  }
+
+  Color _getGroundColor() {
+    if (dayNightCycle < 0.5) {
+      return Color.lerp(Colors.green, Colors.green[800]!, dayNightCycle * 2)!;
+    } else {
+      return Color.lerp(Colors.green[800]!, Colors.green, (dayNightCycle - 0.5) * 2)!;
+    }
+  }
+
+  Widget _buildGameOverDialog() {
+    return Dialog(
+      backgroundColor: Colors.grey[900],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.close, size: 60, color: Colors.red),
+            const SizedBox(height: 24),
+            const Text('Game Over',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 16),
+            Text('Your Score: ${score.toInt()}',
+                style: const TextStyle(fontSize: 20, color: Colors.white70)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _startGame();
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Restart', style: TextStyle(fontSize: 20)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    gameLoop?.cancel();
-    obstacleTimer?.cancel();
-    controller.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController = Get.find();
+    final mediaQuery = MediaQuery.of(context);
+    screenWidth = mediaQuery.size.width;
+    screenHeight = mediaQuery.size.height;
+    groundHeight = screenHeight * 0.7;
+
+    if (isGameOver) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _buildGameOverDialog(),
+        );
+      });
+    }
+
     return Scaffold(
+      backgroundColor: _getSkyColor(),
       appBar: AppBar(
-        title: const Text('Dino Jump 🦖'),
-        centerTitle: true,
+        title: Text("Dino Jump"),
+        centerTitle: false,
         actions: [
-          Obx(() => IconButton(
-                icon: Icon(themeController.isDarkMode.value ? Icons.light_mode : Icons.dark_mode),
-                onPressed: themeController.toggleTheme,
-                tooltip: 'Toggle Theme',
-              )),
+          Row(
+            children: [
+              Text(
+                'Score: ${score.toInt()}',
+                style: TextStyle(
+                ),
+              ),
+              SizedBox(width: 10,),
+              Text(
+                'High Score: ${highScore.toInt()}',
+                style: TextStyle(
+                ),
+              ),
+              SizedBox(width: 10,),
+            ],
+          )
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.background,
-              Theme.of(context).colorScheme.background.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: GestureDetector(
-          onTap: jump,
-          child: Stack(
-            children: [
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.light
-                        ? Colors.grey[400]
-                        : Colors.grey[700],
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _jump,
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: 0,
+              child: Container(
+                width: screenWidth,
+                height: screenHeight - groundHeight,
+                color: _getGroundColor(),
+              ),
+            ),
+            Positioned(
+              left: cloudX,
+              top: cloudTop,
+              child: Container(
+                width: cloudSize,
+                height: cloudSize,
+                decoration: BoxDecoration(
+                  color: Color.lerp(Colors.white, Colors.grey[800]!, dayNightCycle),
+                  shape: BoxShape.circle,
                 ),
               ),
-              Positioned(
-                left: 100,
-                bottom: 100 + dinoY * 200,
+            ),
+            Positioned(
+              left: 50,
+              bottom: screenHeight - groundHeight - 10,
+              child: Transform.translate(
+                offset: Offset(0, dinoY),
                 child: Transform(
                   alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..rotateZ(isJumping ? animation.value * 0.2 - 0.1 : 0),
-                  child: const Icon(Icons.directions_run, size: 50, color: Colors.green),
+                  transform: Matrix4.identity()..scale(-1.0, 1.0),
+                  child: const Text('🦖', style: TextStyle(fontSize: 45)),
                 ),
               ),
-              for (var obstacle in obstacles)
-                Positioned(
-                  left: obstacle * MediaQuery.of(context).size.width,
-                  bottom: 100,
-                  child: Container(
-                    width: obstacleWidth,
-                    height: obstacleHeight,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(2, 2),
-                        ),
-                      ],
-                    ),
+            ),
+            Positioned(
+              left: obstacleX,
+              bottom: screenHeight - groundHeight,
+              child: Container(
+                width: obstacleWidth,
+                height: obstacleHeight,
+                decoration: BoxDecoration(
+                  color: Color.lerp(Colors.brown, Colors.brown[900]!, dayNightCycle),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    topRight: Radius.circular(10),
                   ),
                 ),
-              Positioned(
-                top: 20,
-                right: 20,
-                child: Text(
-                  'Score: $score 🌟',
-                  style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.bodyLarge!.color),
-                ),
               ),
-              Positioned(
-                top: 50,
-                right: 20,
-                child: Text(
-                  'High Score: $highScore 🏆',
-                  style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.bodyLarge!.color),
-                ),
-              ),
-              if (gameOver)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Game Over 😢',
-                          style: GoogleFonts.poppins(
-                              fontSize: 40, color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Score: $score 🌟',
-                          style: GoogleFonts.poppins(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).textTheme.bodyLarge!.color),
-                        ),
-                        const SizedBox(height: 10),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Play Again'),
-                          onPressed: startGame,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
