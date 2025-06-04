@@ -2,21 +2,18 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:juju_games/src/app_config/app_theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SnakeGameScreen extends StatefulWidget {
   const SnakeGameScreen({super.key});
 
   @override
-  _SnakeGameScreenState createState() => _SnakeGameScreenState();
+  State<SnakeGameScreen> createState() => _SnakeGameScreenState();
 }
 
 class _SnakeGameScreenState extends State<SnakeGameScreen> {
   static const int gridSize = 20;
-  static const int cellSize = 20;
   List<Offset> snake = [const Offset(10, 10)];
   Offset food = const Offset(5, 5);
   Offset direction = const Offset(1, 0);
@@ -127,17 +124,33 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController = Get.find();
+    // final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    // We'll make the game board size square and fit vertically (leaving space for appBar & safe areas)
+    final availableHeight = screenHeight - kToolbarHeight - MediaQuery.of(context).padding.top - 60;
+    final gameBoardSize = min(availableHeight, availableHeight);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Snake Game 🐍'),
-        centerTitle: true,
+        title: Text("Snake"),
+        centerTitle: false,
         actions: [
-          Obx(() => IconButton(
-                icon: Icon(themeController.isDarkMode.value ? Icons.light_mode : Icons.dark_mode),
-                onPressed: themeController.toggleTheme,
-                tooltip: 'Toggle Theme',
-              )),
+          Row(
+            children: [
+              Text(
+                'Score: ${score.toInt()}',
+                style: TextStyle(
+                ),
+              ),
+              SizedBox(width: 10,),
+              Text(
+                'High Score: ${highScore.toInt()}',
+                style: TextStyle(
+                ),
+              ),
+              SizedBox(width: 10,),
+            ],
+          )
         ],
       ),
       body: Container(
@@ -166,86 +179,80 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
               changeDirection(const Offset(-1, 0));
             }
           },
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Stack(
+            children: [
+              // Centered game board & game over message
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Score: $score 🌟',
-                        style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge!.color)),
-                    Text('High Score: $highScore 🏆',
-                        style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge!.color)),
+                    SizedBox(
+                      width: gameBoardSize,
+                      height: gameBoardSize,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                          color: Colors.green[100],
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: CustomPaint(
+                          painter: SnakePainter(snake: snake, food: food, gameOver: gameOver),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (gameOver)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Game Over! 😢',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Play Again'),
+                              onPressed: startGame,
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  width: gridSize * cellSize.toDouble(),
-                  height: gridSize * cellSize.toDouble(),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: CustomPaint(
-                    painter: SnakePainter(snake: snake, food: food, gameOver: gameOver),
-                  ),
+              ),
+              // Pause/Resume button top right
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: togglePause,
+                  icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
                 ),
-                const SizedBox(height: 20),
-                if (gameOver)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Game Over! 😢',
-                          style: GoogleFonts.poppins(
-                              fontSize: 28,
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Play Again'),
-                          onPressed: startGame,
-                        ),
-                      ],
-                    ),
-                  ),
-                if (!gameOver)
-                  ElevatedButton.icon(
-                    icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
-                    label: Text(isPaused ? 'Resume' : 'Pause'),
-                    onPressed: togglePause,
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
