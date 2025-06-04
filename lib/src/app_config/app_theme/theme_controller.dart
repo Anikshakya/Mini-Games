@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:juju_games/src/app_utils/read_write.dart';
 
 class ThemeController extends GetxController {
-  var seedColor = Colors.purple.obs;
+  var seedColor = Colors.deepPurple.obs;
   var isDarkMode = true.obs;
   var borderRadius = 50.0.obs;
   var paddingValue = 16.0.obs;
@@ -37,7 +37,7 @@ class ThemeController extends GetxController {
     // Load from storage
     isDarkMode.value = read('isDarkMode') ?? true;
 
-    final int? colorIndex = read('seedColorIndex');
+    final dynamic colorIndex = read('seedColorIndex') ?? 3;
     if (colorIndex != null && colorIndex < colorOptions.length) {
       seedColor.value = colorOptions[colorIndex];
     }

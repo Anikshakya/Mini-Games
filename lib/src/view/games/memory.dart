@@ -1,10 +1,9 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:juju_games/src/app_config/app_theme/theme_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:juju_games/src/app_utils/read_write.dart';
+import 'package:confetti/confetti.dart';
+import 'dart:math';
 
 class MemoryGameScreen extends StatefulWidget {
   const MemoryGameScreen({super.key});
@@ -13,7 +12,7 @@ class MemoryGameScreen extends StatefulWidget {
   _MemoryGameScreenState createState() => _MemoryGameScreenState();
 }
 
-class _MemoryGameScreenState extends State<MemoryGameScreen> {
+class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProviderStateMixin {
   List<String> cardValues = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
   List<String> cards = [];
   List<bool> cardFlips = [];
@@ -22,28 +21,63 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   int pairsFound = 0;
   bool processing = false;
   int moves = 0;
-  int highScore = 0;
+  int highScoreMoves = 0;
+  int highScoreTime = 0;
   bool gameWon = false;
   Timer? timer;
   int timeLeft = 60;
+  AnimationController? _flipAnimationController;
+  Animation<double>? _flipAnimation;
+  AnimationController? _winAnimationController;
+  Animation<double>? _winScaleAnimation;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
-    _loadHighScore();
+    _loadHighScores();
+    _initializeAnimations();
     initializeGame();
   }
 
-  void _loadHighScore() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _initializeAnimations() {
+    _flipAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _flipAnimation = CurvedAnimation(
+      parent: _flipAnimationController!,
+      curve: Curves.easeInOutCubic,
+    );
+    _winAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _winScaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _winAnimationController!, curve: Curves.elasticOut),
+    );
+    _confettiController = ConfettiController(duration: const Duration(seconds: 4));
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    _flipAnimationController?.dispose();
+    _winAnimationController?.dispose();
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  void _loadHighScores() async {
     setState(() {
-      highScore = prefs.getInt('memory_high_score') ?? 0;
+      highScoreMoves = read('memory_high_score_moves') ?? 0;
+      highScoreTime = read('memory_high_score_time') ?? 0;
     });
   }
 
-  void _saveHighScore() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('memory_high_score', highScore);
+  void _saveHighScores() async {
+    write('memory_high_score_moves', highScoreMoves);
+    write('memory_high_score_time', highScoreTime);
   }
 
   void initializeGame() {
@@ -58,200 +92,319 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       gameWon = false;
       timeLeft = 60;
       timer?.cancel();
+      _winAnimationController?.reset();
+      _confettiController.stop();
       timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() {
           timeLeft--;
           if (timeLeft <= 0 && !gameWon) {
             timer.cancel();
-            gameWon = true; // Treat as game over
-            if (highScore == 0 || moves < highScore) {
-              highScore = moves;
-              _saveHighScore();
-            }
+            gameWon = true;
+            _saveHighScores();
+            _showGameOverDialog();
           }
         });
       });
     });
   }
 
+  void _showGameOverDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return ScaleTransition(
+          scale: _winScaleAnimation ?? AlwaysStoppedAnimation(1.0),
+          child: AlertDialog(
+            backgroundColor: theme.colorScheme.surfaceContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            contentPadding: const EdgeInsets.all(24),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  timeLeft <= 0 ? 'Time’s Up! 😢' : 'Victory! 🎉',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: timeLeft <= 0 ? theme.colorScheme.error : Colors.green[600],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Completed in $moves moves',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'Time Left: $timeLeft s',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                if (highScoreMoves > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      'Best Moves: $highScoreMoves 🏆',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ),
+                if (highScoreTime > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Best Time Left: $highScoreTime s 🏆',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ),
+                if ((highScoreMoves == 0 || moves < highScoreMoves) || (highScoreTime == 0 || timeLeft > highScoreTime))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      'New Best Score! 🏆',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  elevation: 3,
+                ),
+                icon: const Icon(Icons.refresh, size: 22),
+                label: Text(
+                  'Play Again',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  initializeGame();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController = Get.find();
+    final theme = Theme.of(context);
+    final media = MediaQuery.of(context);
+    final boardSize = media.size.width * 0.98;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Memory Game 🧠'),
-        centerTitle: true,
+        title: Text(
+          'Memory Match 🧠',
+        ),
         actions: [
-          Obx(() => IconButton(
-                icon: Icon(themeController.isDarkMode.value ? Icons.light_mode : Icons.dark_mode),
-                onPressed: themeController.toggleTheme,
-                tooltip: 'Toggle Theme',
-              )),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
             onPressed: initializeGame,
             tooltip: 'New Game',
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.background,
-              Theme.of(context).colorScheme.background.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Text(
-                    'Time Left: $timeLeft s ⏰',
-                    style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: timeLeft < 10
-                            ? Colors.red
-                            : Theme.of(context).textTheme.bodyLarge!.color),
-                  ),
-                  Text(
-                    'Pairs Found: $pairsFound / ${cardValues.length} 🥳',
-                    style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).textTheme.bodyLarge!.color),
-                  ),
-                  Text(
-                    'Moves: $moves 🚶',
-                    style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).textTheme.bodyLarge!.color),
-                  ),
-                  if (highScore > 0)
-                    Text(
-                      'Best: $highScore moves 🏆',
-                      style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green[700]),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildScoreCard('Time ⏰', '$timeLeft s', timeLeft < 10 ? theme.colorScheme.error : theme.colorScheme.primary),
+                        _buildScoreCard('Pairs 🎴', '$pairsFound/${cardValues.length}', theme.colorScheme.secondary),
+                        _buildScoreCard('Moves 🚶', '$moves', theme.colorScheme.primary),
+                      ],
                     ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: boardSize,
+                      height: boardSize,
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 1,
+                          mainAxisSpacing: 2,
+                          crossAxisSpacing: 2,
+                        ),
+                        itemCount: cards.length,
+                        itemBuilder: (context, index) {
+                          bool isCornerTopLeft = (index == 0);
+                          bool isCornerTopRight = (index == 3);
+                          bool isCornerBottomRight = (index == 15);
+                          bool isCornerBottomLeft = (index == 12);
+    
+                          return GestureDetector(
+                            onTap: () => flipCard(index),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                splashColor: theme.colorScheme.primary.withOpacity(0.3),
+                                highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: isCornerTopLeft ? const Radius.circular(12) : Radius.zero,
+                                  topRight: isCornerTopRight ? const Radius.circular(12) : Radius.zero,
+                                  bottomRight: isCornerBottomRight ? const Radius.circular(12) : Radius.zero,
+                                  bottomLeft: isCornerBottomLeft ? const Radius.circular(12) : Radius.zero,
+                                ),
+                                onTap: () => flipCard(index),
+                                child: AnimatedBuilder(
+                                  animation: _flipAnimation ?? AlwaysStoppedAnimation(1.0),
+                                  builder: (context, child) {
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 400),
+                                      curve: Curves.easeInOut,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: cardFlips[index]
+                                              ? [theme.colorScheme.surface, theme.colorScheme.surfaceContainer]
+                                              : [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.85)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: isCornerTopLeft ? const Radius.circular(12) : Radius.zero,
+                                          topRight: isCornerTopRight ? const Radius.circular(12) : Radius.zero,
+                                          bottomRight: isCornerBottomRight ? const Radius.circular(12) : Radius.zero,
+                                          bottomLeft: isCornerBottomLeft ? const Radius.circular(12) : Radius.zero,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: theme.colorScheme.shadow.withOpacity(0.15),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 400),
+                                          transitionBuilder: (Widget child, Animation<double> animation) {
+                                            return RotationTransition(
+                                              turns: Tween<double>(begin: 0.0, end: 1.0).animate(animation),
+                                              child: ScaleTransition(scale: animation, child: child),
+                                            );
+                                          },
+                                          child: Text(
+                                            key: ValueKey<bool>(cardFlips[index]),
+                                            cardFlips[index] ? cards[index] : '❓',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 40,
+                                              fontWeight: FontWeight.w600,
+                                              color: cardFlips[index] ? theme.colorScheme.onSurface : theme.colorScheme.onPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (gameWon && timeLeft > 0)
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirection: pi / 2,
+                emissionFrequency: 0.03,
+                numberOfParticles: 25,
+                maxBlastForce: 120,
+                minBlastForce: 30,
+                gravity: 0.25,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
+                  Colors.green[600]!,
+                  Colors.yellow[600]!,
+                  Colors.purple[400]!,
                 ],
               ),
             ),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16.0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 8.0,
-                  mainAxisSpacing: 8.0,
-                ),
-                itemCount: cards.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () => flipCard(index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: cardFlips[index]
-                              ? [Colors.white, Colors.grey[200]!]
-                              : [Colors.blue[700]!, Colors.blue[500]!],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return ScaleTransition(scale: animation, child: child);
-                          },
-                          child: Text(
-                            key: ValueKey<bool>(cardFlips[index]),
-                            cardFlips[index] ? cards[index] : '❓',
-                            style: TextStyle(
-                              fontSize: 32,
-                              color: cardFlips[index]
-                                  ? Theme.of(context).textTheme.bodyLarge!.color
-                                  : Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+        ],
+      ),
+    );
+  }
+
+  _buildScoreCard(String title, String value, Color color) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$value',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            if (gameWon || timeLeft <= 0)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        timeLeft <= 0 ? 'Time’s Up! 😢' : 'Congratulations! 🎉',
-                        style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: timeLeft <= 0 ? Colors.red : Colors.green[700]),
-                      ),
-                      Text(
-                        'You won in $moves moves! 🥳',
-                        style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge!.color),
-                      ),
-                      if (highScore == 0 || moves < highScore)
-                        Text(
-                          'New best score! 🏆',
-                          style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green[700]),
-                        ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Play Again'),
-                        onPressed: initializeGame,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -261,7 +414,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
     setState(() {
       cardFlips[index] = true;
-      moves++;
+      _flipAnimationController?.forward(from: 0);
     });
 
     if (firstCardIndex == null) {
@@ -269,6 +422,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
     } else {
       secondCardIndex = index;
       processing = true;
+      setState(() {
+        moves++;
+      });
       checkForMatch();
     }
   }
@@ -282,10 +438,16 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
         setState(() {
           gameWon = true;
           timer?.cancel();
-          if (highScore == 0 || moves < highScore) {
-            highScore = moves;
-            _saveHighScore();
+          if (highScoreMoves == 0 || moves < highScoreMoves) {
+            highScoreMoves = moves;
           }
+          if (highScoreTime == 0 || timeLeft > highScoreTime) {
+            highScoreTime = timeLeft;
+          }
+          _saveHighScores();
+          _winAnimationController?.forward();
+          _confettiController.play();
+          _showGameOverDialog();
         });
       }
       resetSelection();
@@ -305,12 +467,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       firstCardIndex = null;
       secondCardIndex = null;
       processing = false;
+      _flipAnimationController?.reset();
     });
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
   }
 }

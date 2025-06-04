@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:juju_games/src/app_utils/read_write.dart';
 
 class TicTacToeScreen extends StatefulWidget {
   const TicTacToeScreen({super.key});
@@ -8,8 +7,7 @@ class TicTacToeScreen extends StatefulWidget {
   State<TicTacToeScreen> createState() => _TicTacToeScreenState();
 }
 
-class _TicTacToeScreenState extends State<TicTacToeScreen>
-    with SingleTickerProviderStateMixin {
+class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProviderStateMixin {
   late List<List<String>> board;
   String currentPlayer = 'X';
   String winner = '';
@@ -20,12 +18,12 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
   List<Offset>? winningLine;
   late AnimationController _lineAnimationController;
   late Animation<double> _lineAnimation;
+  bool showWinnerBanner = false;
 
   @override
   void initState() {
     super.initState();
     board = List.generate(3, (_) => List.filled(3, ''));
-    _loadHighScore();
     _lineAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -42,22 +40,6 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
     super.dispose();
   }
 
-  /// Loads stored scores from GetStorage
-  void _loadHighScore() {
-    setState(() {
-      highScore = read<int>('ttt_high_score', defaultValue: 0);
-      xWins = read<int>('ttt_x_wins', defaultValue: 0);
-      oWins = read<int>('ttt_o_wins', defaultValue: 0);
-    });
-  }
-
-  /// Saves current scores to GetStorage
-  void _saveHighScore() {
-    write<int>('ttt_high_score', highScore);
-    write<int>('ttt_x_wins', xWins);
-    write<int>('ttt_o_wins', oWins);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -70,6 +52,13 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
         title: Text(
           'Tic Tac Toe',
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
+            onPressed: _resetGame,
+            tooltip: 'New Game',
+          ),
+        ],
       ),
       body: SafeArea(
         bottom: false,
@@ -116,20 +105,9 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
                 ),
                 const SizedBox(height: 50),
                 Center(
-                  child: Container(
+                  child: SizedBox(
                     width: boardSize,
                     height: boardSize,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.shadow.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
                     child: Stack(
                       children: [
                         GridView.builder(
@@ -236,25 +214,47 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
-                Center(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: _resetGame,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(
-                      'New Game',
-                      style: theme.textTheme.labelLarge,
-                    ),
-                  ),
+                // Winner banner below the board
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (child, animation) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.3),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: showWinnerBanner
+                      ? Column(
+                          key: const ValueKey('winner-banner'),
+                          children: [
+                            const SizedBox(height: 20),
+                            Text(
+                              winner.isNotEmpty
+                                  ? '🎉 $winner Wins!'
+                                  : '🤝 It\'s a Draw!',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _resetGame,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text("Play Again"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                textStyle: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
-                const SizedBox(height: 32),
               ],
             ),
           ), 
@@ -299,6 +299,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
         if (checkWinner(row, col)) {
           winner = currentPlayer;
           gameOver = true;
+          showWinnerBanner = true;
           if (currentPlayer == 'X') {
             xWins++;
             if (xWins > highScore) {
@@ -310,12 +311,11 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
               highScore = oWins;
             }
           }
-          _saveHighScore();
           _lineAnimationController.forward(from: 0);
         } else if (isBoardFull()) {
           winner = '';
           gameOver = true;
-          _saveHighScore();
+          showWinnerBanner = true;
         } else {
           currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
         }
@@ -385,6 +385,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen>
       winner = '';
       gameOver = false;
       winningLine = null;
+      showWinnerBanner = false;
       _lineAnimationController.reset();
     });
   }
