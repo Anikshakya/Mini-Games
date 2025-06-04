@@ -155,7 +155,10 @@ class _DinoGameState extends State<DinoGame> with SingleTickerProviderStateMixin
   }
 
   Widget _buildGameOverDialog() {
-    return Dialog(
+  // ignore: deprecated_member_use
+  return WillPopScope(
+    onWillPop: () async => false, // Disables back button
+    child: Dialog(
       backgroundColor: Colors.grey[900],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -187,8 +190,9 @@ class _DinoGameState extends State<DinoGame> with SingleTickerProviderStateMixin
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   void dispose() {
