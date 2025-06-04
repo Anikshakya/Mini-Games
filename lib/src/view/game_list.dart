@@ -5,7 +5,7 @@ import 'package:juju_games/src/view/games/memory.dart';
 import 'package:juju_games/src/view/games/rock_paper_scissors.dart';
 import 'package:juju_games/src/view/games/snake.dart';
 import 'package:juju_games/src/view/games/space_shooter.dart';
-import 'package:juju_games/src/view/games/tick_tack_toe.dart';
+import 'package:juju_games/src/view/games/tic_tac_toe.dart';
 import 'package:juju_games/src/widgets/game_list_tile.dart';
 
 import '../app_config/app_theme/theme_controller.dart';
