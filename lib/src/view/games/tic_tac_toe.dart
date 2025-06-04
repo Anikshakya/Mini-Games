@@ -5,7 +5,7 @@ class TicTacToeScreen extends StatefulWidget {
   const TicTacToeScreen({super.key});
 
   @override
-  _TicTacToeScreenState createState() => _TicTacToeScreenState();
+  State<TicTacToeScreen> createState() => _TicTacToeScreenState();
 }
 
 class _TicTacToeScreenState extends State<TicTacToeScreen>
