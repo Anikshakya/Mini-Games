@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:juju_games/src/view/games/flappy_plane.dart';
 import 'package:juju_games/src/view/games/dino_jump.dart';
 import 'package:juju_games/src/view/games/memory.dart';
 import 'package:juju_games/src/view/games/rock_paper_scissors.dart';
@@ -22,6 +23,13 @@ class GameList extends StatelessWidget {
       "icon": Icons.directions_run,
       "gradient_color": [Colors.orange[600]!, Colors.orange[400]!],
       "route": () => Get.to(() => const DinoGame()),
+    },
+    {
+      "name": "Flappy Plane",
+      "desc": "Dribble over obstacles",
+      "icon": Icons.airplanemode_active,
+      "gradient_color": [Colors.purple[600]!, Colors.indigo[400]!],
+      "route": () => Get.to(() => const FlappyBirdScreen()),
     },
     {
       "name": "Space Shooter 🚀",
