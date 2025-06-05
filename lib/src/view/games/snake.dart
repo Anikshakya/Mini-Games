@@ -156,140 +156,163 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
     final highScore = difficulty == "Hard" ? hardHighScore : normalHighScore;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Snake", style: TextStyle(fontSize: 16),),
-        centerTitle: false,
-        actions: [
-          Row(
-            children: [
-              Text('Score: $score'),
-              const SizedBox(width: 10),
-              Text('High Score: $highScore'),
-              const SizedBox(width: 10),
-            ],
-          )
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Game?'),
+            content: const Text('Do you really want to leave the game?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Yes'),
+              ),
             ],
           ),
+        );
+        return shouldExit ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Snake", style: TextStyle(fontSize: 16),),
+          centerTitle: false,
+          actions: [
+            Row(
+              children: [
+                Text('Score: $score'),
+                const SizedBox(width: 10),
+                Text('High Score: $highScore'),
+                const SizedBox(width: 10),
+              ],
+            )
+          ],
         ),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: (details) {
-            if (details.delta.dy > 0) {
-              changeDirection(const Offset(0, 1));
-            } else if (details.delta.dy < 0) {
-              changeDirection(const Offset(0, -1));
-            }
-          },
-          onHorizontalDragUpdate: (details) {
-            if (details.delta.dx > 0) {
-              changeDirection(const Offset(1, 0));
-            } else if (details.delta.dx < 0) {
-              changeDirection(const Offset(-1, 0));
-            }
-          },
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: boardSize,
-                      height: boardSize,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.green[100],
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: (details) {
+              if (details.delta.dy > 0) {
+                changeDirection(const Offset(0, 1));
+              } else if (details.delta.dy < 0) {
+                changeDirection(const Offset(0, -1));
+              }
+            },
+            onHorizontalDragUpdate: (details) {
+              if (details.delta.dx > 0) {
+                changeDirection(const Offset(1, 0));
+              } else if (details.delta.dx < 0) {
+                changeDirection(const Offset(-1, 0));
+              }
+            },
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: boardSize,
+                        height: boardSize,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green[100],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: CustomPaint(
+                            painter: SnakePainter(
+                              snake: snake,
+                              food: food,
+                              gameOver: gameOver,
+                              cellSize: cellSize,
                             ),
-                          ],
-                        ),
-                        child: CustomPaint(
-                          painter: SnakePainter(
-                            snake: snake,
-                            food: food,
-                            gameOver: gameOver,
-                            cellSize: cellSize,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    if (gameOver)
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Game Over! 😢',
-                              style: GoogleFonts.poppins(
-                                fontSize: 28,
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
+                      const SizedBox(height: 20),
+                      if (gameOver)
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Play Again'),
-                              onPressed: startGame,
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Game Over! 😢',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Play Again'),
+                                onPressed: startGame,
+                              ),
+                            ],
+                          ),
                         ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: togglePause,
+                        icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
                       ),
-                  ],
+                      const SizedBox(width: 4),
+                      ChoiceChip(
+                        label: const Text("Normal"),
+                        selected: difficulty == "Normal",
+                        onSelected: (_) => setDifficulty("Normal"),
+                      ),
+                      const SizedBox(width: 4),
+                      ChoiceChip(
+                        label: const Text("Hard"),
+                        selected: difficulty == "Hard",
+                        onSelected: (_) => setDifficulty("Hard"),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: togglePause,
-                      icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
-                    ),
-                    const SizedBox(width: 4),
-                    ChoiceChip(
-                      label: const Text("Normal"),
-                      selected: difficulty == "Normal",
-                      onSelected: (_) => setDifficulty("Normal"),
-                    ),
-                    const SizedBox(width: 4),
-                    ChoiceChip(
-                      label: const Text("Hard"),
-                      selected: difficulty == "Hard",
-                      onSelected: (_) => setDifficulty("Hard"),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

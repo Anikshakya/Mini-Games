@@ -174,65 +174,88 @@ class _SpaceShooterScreenState extends State<SpaceShooterScreen> {
  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text('Space Shooter', style: TextStyle(fontSize: 16),),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Text('High Score: $highScore'),
-                SizedBox(width: 10.0,),
-                Text('Score: $score'),
-              ],
-            ),
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Game?'),
+            content: const Text('Do you really want to leave the game?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Yes'),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          ParticlesBackground(),
-          GestureDetector(
-            onHorizontalDragUpdate: (details) {
-              setState(() {
-                // Update shipX between -1 and 1 based on drag
-                shipX += details.delta.dx / (MediaQuery.of(context).size.width / 2);
-                if (shipX > 1) shipX = 1;
-                if (shipX < -1) shipX = -1;
-              });
-            },
-            child: Stack(
-              children: [
-                // Ship
-                Align(
-                  alignment: Alignment(shipX, 0.9),
-                  child: Transform.rotate(
-                    angle: -0.79, // approx -90 degrees (π/2 radians)
-                    child: Text('🚀', style: TextStyle(fontSize: 40)),
-                  )
-                ),
-         
-                // Bullets
-                ...bullets.map((b) {
-                  return Align(
-                    alignment: Alignment(b.x, b.y),
-                    child: Text("💥", style: TextStyle(fontSize: 12),)
-                  );
-                }),
-         
-                // Enemies
-                ...enemies.map((e) {
-                  return Align(
-                    alignment: Alignment(e.x, e.y),
-                    child: Text("🧟", style: TextStyle(fontSize: 26),)
-                  );
-                }),
-              ],
+        );
+        return shouldExit ?? false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: Text('Space Shooter', style: TextStyle(fontSize: 16),),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Text('High Score: $highScore'),
+                  SizedBox(width: 10.0,),
+                  Text('Score: $score'),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        body: Stack(
+          children: [
+            ParticlesBackground(),
+            GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  // Update shipX between -1 and 1 based on drag
+                  shipX += details.delta.dx / (MediaQuery.of(context).size.width / 2);
+                  if (shipX > 1) shipX = 1;
+                  if (shipX < -1) shipX = -1;
+                });
+              },
+              child: Stack(
+                children: [
+                  // Ship
+                  Align(
+                    alignment: Alignment(shipX, 0.9),
+                    child: Transform.rotate(
+                      angle: -0.79, // approx -90 degrees (π/2 radians)
+                      child: Text('🚀', style: TextStyle(fontSize: 40)),
+                    )
+                  ),
+           
+                  // Bullets
+                  ...bullets.map((b) {
+                    return Align(
+                      alignment: Alignment(b.x, b.y),
+                      child: Text("💥", style: TextStyle(fontSize: 12),)
+                    );
+                  }),
+           
+                  // Enemies
+                  ...enemies.map((e) {
+                    return Align(
+                      alignment: Alignment(e.x, e.y),
+                      child: Text("🧟", style: TextStyle(fontSize: 26),)
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
