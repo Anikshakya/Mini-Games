@@ -21,12 +21,13 @@ class FlappyBirdScreen extends StatefulWidget {
 class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
   // Game constants
   static const double gravity = 0.002;
-  static const double jumpForce = -0.045;
-  static const double pipeWidth = 0.15;
-  static const double pipeGapSize = 0.35;
-  static const double birdSize = 0.075;
+  static const double jumpForce = -0.035; // Reduced for less jump height
+  static const double pipeWidth = 0.2;
+  static const double basePipeGapSize = 0.35; // Base gap size
+  static const double birdSize = 0.12;
   static const double pipeSpeed = 0.01;
   static const double pipeSpawnInterval = 1500; // milliseconds
+  static const double maxVelocity = 0.1;
 
   // Game state
   double birdY = 0;
@@ -67,46 +68,49 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
       birdY = 0;
       birdVelocity = 0;
       pipes.clear();
+      pipes.add(Pipe(
+        x: 1.5,
+        topHeight: 0.5,
+        gapY: 0.0,
+        gapSize: basePipeGapSize,
+        passed: false,
+      ));
     });
 
     gameTimer?.cancel();
     pipeTimer?.cancel();
 
-    // Main game loop
     gameTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       if (!gameOver && !isPaused) {
         updateGame();
       }
     });
 
-    // Add pipes periodically
-    pipeTimer = Timer.periodic(
-      Duration(milliseconds: pipeSpawnInterval.toInt()),
-      (_) {
-        if (!gameOver && !isPaused) {
-          addPipe();
-        }
-      },
-    );
+    pipeTimer = Timer.periodic(Duration(milliseconds: pipeSpawnInterval.toInt()), (_) {
+      if (!gameOver && !isPaused) {
+        addPipe();
+      }
+    });
   }
 
   void updateGame() {
     setState(() {
-      // Apply gravity
-      birdVelocity += gravity;
+      birdVelocity = (birdVelocity + gravity).clamp(-maxVelocity, maxVelocity);
       birdY += birdVelocity;
 
-      // Move pipes
-      pipes = pipes.map((pipe) => Pipe(
-            x: pipe.x - pipeSpeed,
-            topHeight: pipe.topHeight,
-            gapY: pipe.gapY,
-            passed: pipe.passed || pipe.x < -pipeWidth,
-          )).where((pipe) => pipe.x > -pipeWidth * 2).toList();
+      pipes = pipes
+          .map((pipe) => Pipe(
+                x: pipe.x - pipeSpeed,
+                topHeight: pipe.topHeight,
+                gapY: pipe.gapY,
+                gapSize: pipe.gapSize,
+                passed: pipe.passed,
+              ))
+          .where((pipe) => pipe.x > -pipeWidth)
+          .toList();
 
-      // Check for passed pipes
-      for (final pipe in pipes) {
-        if (!pipe.passed && pipe.x < -pipeWidth / 2) {
+      for (var pipe in pipes) {
+        if (!pipe.passed && pipe.x + pipeWidth / 2 < 0) {
           pipe.passed = true;
           score++;
           if (score > highScore) {
@@ -116,13 +120,11 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
         }
       }
 
-      // Check collisions with ground/ceiling
-      if (birdY > 1 + birdSize || birdY < -1 - birdSize) {
+      if (birdY > 1 - birdSize / 2 || birdY < -1 + birdSize / 2) {
         endGame();
         return;
       }
 
-      // Check pipe collisions
       for (final pipe in pipes) {
         if (checkCollision(pipe)) {
           endGame();
@@ -133,36 +135,42 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
   }
 
   bool checkCollision(Pipe pipe) {
-    // Bird hitbox
-    final birdLeft = -birdSize;
-    final birdRight = birdSize;
-    final birdTop = birdY - birdSize;
-    final birdBottom = birdY + birdSize;
+    final birdWidth = birdSize;
+    final birdHeight = birdSize;
+    final birdLeft = -birdWidth / 2;
+    final birdRight = birdWidth / 2;
+    final birdTop = birdY - birdHeight / 2;
+    final birdBottom = birdY + birdHeight / 2;
 
-    // Pipe hitbox
-    final pipeLeft = pipe.x - pipeWidth / 2;
-    final pipeRight = pipe.x + pipeWidth / 2;
-    final pipeTop = pipe.gapY - pipeGapSize / 2;
-    final pipeBottom = pipe.gapY + pipeGapSize / 2;
+    final pipeLeft = (pipe.x * 2 - 1) - pipeWidth / 2;
+    final pipeRight = (pipe.x * 2 - 1) + pipeWidth / 2;
 
-    // Check if bird is within pipe's x-range
     if (birdRight > pipeLeft && birdLeft < pipeRight) {
-      // Check if bird is outside the gap
-      return birdTop < pipeTop || birdBottom > pipeBottom;
+      final gapTop = -1 + 2 * pipe.topHeight;
+      final gapBottom = gapTop + 2 * pipe.gapSize;
+      if (birdBottom <= gapTop || birdTop >= gapBottom) {
+        return true;
+      }
+      return false;
     }
     return false;
   }
 
   void addPipe() {
-    final random = Random();
-    final gapY = (random.nextDouble() * 1.6) - 0.8; // -0.8 to 0.8
-    final topHeight = 0.3 + random.nextDouble() * 0.4; // 0.3 to 0.7
+    final topHeight = 0.02 + (0.48 * Random().nextDouble());
+    final gapSize = 0.1 + (0.4 * Random().nextDouble());
+    final gapY = topHeight - 1 + gapSize / 2;
+    final bottomHeight = 1 - topHeight - gapSize;
 
+    if (topHeight < 0.2 || topHeight > 0.8 || bottomHeight < 0.2) {
+      return;
+    }
     setState(() {
       pipes.add(Pipe(
-        x: 1.0 + pipeWidth,
+        x: 1.5,
         topHeight: topHeight,
         gapY: gapY,
+        gapSize:  gapSize,
         passed: false,
       ));
     });
@@ -222,6 +230,7 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
         if (gameStarted && !gameOver) {
@@ -236,7 +245,6 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
           onTap: jump,
           child: Stack(
             children: [
-              // Sky background
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -249,21 +257,16 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                   ),
                 ),
               ),
-
-              // Clouds background
               Positioned.fill(
                 child: CustomPaint(
                   painter: CloudPainter(),
                 ),
               ),
-
-              // Pipes
               ...pipes.map((pipe) {
                 return Stack(
                   children: [
-                    // Top pipe
                     Align(
-                      alignment: Alignment(pipe.x, -1),
+                      alignment: Alignment(pipe.x * 2 - 1, -1),
                       child: Container(
                         width: MediaQuery.of(context).size.width * pipeWidth,
                         height: MediaQuery.of(context).size.height * pipe.topHeight,
@@ -280,14 +283,11 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                         ),
                       ),
                     ),
-
-                    // Bottom pipe
                     Align(
-                      alignment: Alignment(pipe.x, 1),
+                      alignment: Alignment(pipe.x * 2 - 1, 1),
                       child: Container(
                         width: MediaQuery.of(context).size.width * pipeWidth,
-                        height: MediaQuery.of(context).size.height * 
-                            (1 - pipe.topHeight - pipeGapSize),
+                        height: MediaQuery.of(context).size.height * (1 - pipe.topHeight - pipe.gapSize),
                         decoration: BoxDecoration(
                           color: Colors.green.shade800,
                           border: Border.all(color: Colors.green.shade900, width: 2),
@@ -303,9 +303,7 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                     ),
                   ],
                 );
-              }).toList(),
-
-              // Ground
+              }),
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
@@ -316,8 +314,6 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                   ),
                 ),
               ),
-
-              // Bird
               Align(
                 alignment: Alignment(0, birdY.clamp(-1.0, 1.0)),
                 child: Transform.rotate(
@@ -330,18 +326,16 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 5,
                           spreadRadius: 1,
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.airplanemode_active, color: Colors.red),
+                    child: const Icon(Icons.arrow_forward_ios, color: Color.fromARGB(255, 212, 161, 83)),
                   ),
                 ),
               ),
-
-              // Score
               Positioned(
                 top: 50,
                 left: 0,
@@ -381,8 +375,6 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                   ],
                 ),
               ),
-
-              // Pause button
               if (gameStarted && !gameOver)
                 Positioned(
                   top: 30,
@@ -396,8 +388,6 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                     onPressed: togglePause,
                   ),
                 ),
-
-              // Start message
               if (!gameStarted && !gameOver)
                 Positioned.fill(
                   child: Center(
@@ -438,12 +428,10 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                     ),
                   ),
                 ),
-
-              // Pause overlay
               if (isPaused && !gameOver)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     child: const Center(
                       child: Text(
                         'Paused',
@@ -456,12 +444,10 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                     ),
                   ),
                 ),
-
-              // Game over message
               if (gameOver)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -507,12 +493,14 @@ class Pipe {
   final double x;
   final double topHeight;
   final double gapY;
+  final double gapSize;
   bool passed;
 
   Pipe({
     required this.x,
     required this.topHeight,
     required this.gapY,
+    required this.gapSize,
     required this.passed,
   });
 }
@@ -520,7 +508,7 @@ class Pipe {
 class CloudPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.7);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.7);
     final random = Random(42);
 
     for (int i = 0; i < 10; i++) {
@@ -577,21 +565,17 @@ class PipePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    // Pipe body
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), borderPaint);
 
-    // Pipe end (top or bottom)
     if (isTop) {
       canvas.drawRect(Rect.fromLTWH(0, size.height - 20, size.width, 20), paint);
-      canvas.drawRect(
-          Rect.fromLTWH(0, size.height - 20, size.width, 20), borderPaint);
+      canvas.drawRect(Rect.fromLTWH(0, size.height - 20, size.width, 20), borderPaint);
     } else {
       canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 20), paint);
       canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 20), borderPaint);
     }
 
-    // Pipe details
     final detailPaint = Paint()..color = Colors.green.shade700;
     for (double y = isTop ? 0 : 20; y < size.height - (isTop ? 20 : 0); y += 30) {
       canvas.drawRect(
