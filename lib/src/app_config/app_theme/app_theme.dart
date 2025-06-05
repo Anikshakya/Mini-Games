@@ -22,7 +22,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         // backgroundColor: colorScheme.primary,
         // foregroundColor: colorScheme.onPrimary,
-        elevation: 1,
+        elevation: 0,
         centerTitle: false,
       ),
       textTheme: Typography.blackCupertino,
@@ -82,7 +82,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         // backgroundColor: colorScheme.surface,
         // foregroundColor: colorScheme.onSurface,
-        elevation: 1,
+        elevation: 0,
         centerTitle: false,
       ),
       textTheme: Typography.whiteCupertino,

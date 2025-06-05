@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
  
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
  
 class SpaceShooterScreen extends StatefulWidget {
@@ -178,16 +177,15 @@ class _SpaceShooterScreenState extends State<SpaceShooterScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.grey[900],
         title: Text('Space Shooter', style: TextStyle(fontSize: 16),),
         actions: [
           Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                Text('High Score: $highScore', style: GoogleFonts.poppins(fontSize : 14)),
+                Text('High Score: $highScore'),
                 SizedBox(width: 10.0,),
-                Text('Score: $score', style: GoogleFonts.poppins(fontSize : 14)),
+                Text('Score: $score'),
               ],
             ),
           ),
