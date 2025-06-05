@@ -252,7 +252,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                   children: [
                     const SizedBox(height: 32),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildScoreCard('Time ⏰', '$timeLeft s', timeLeft < 10 ? theme.colorScheme.error : theme.colorScheme.primary),
                         _buildScoreCard('Pairs 🎴', '$pairsFound/${cardValues.length}', theme.colorScheme.secondary),
