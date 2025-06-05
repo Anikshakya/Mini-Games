@@ -233,11 +233,31 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
     // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
-        if (gameStarted && !gameOver) {
-          togglePause();
-          return false;
-        }
-        return true;
+        togglePause();
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Game?'),
+            content: const Text('Do you really want to leave the game?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  togglePause();
+                  Navigator.of(context).pop(false);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  togglePause();
+                  Navigator.of(context).pop(true);
+                },
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+        );
+        return shouldExit ?? false;
       },
       child: Scaffold(
         appBar: AppBar(
