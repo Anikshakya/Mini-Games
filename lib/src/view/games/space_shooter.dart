@@ -217,6 +217,7 @@ class _SpaceShooterScreenState extends State<SpaceShooterScreen> {
           children: [
             ParticlesBackground(),
             GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onHorizontalDragUpdate: (details) {
                 setState(() {
                   // Update shipX between -1 and 1 based on drag
