@@ -11,6 +11,7 @@ class HomePage extends StatelessWidget {
     var themeCon = Get.put(ThemeController());
     return Scaffold(
       appBar: AppBar(
+        title: Text("Juju Mini Games"),
         actions: [
           Obx(() => IconButton(
             icon: Icon(themeCon.isDarkMode.value ? Icons.light_mode : Icons.dark_mode),

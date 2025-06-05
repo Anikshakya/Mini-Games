@@ -20,10 +20,10 @@ class AppTheme {
       scaffoldBackgroundColor: colorScheme.surface,
       shadowColor: Colors.black.withOpacity(0.3), // 👈 Added for light theme
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        elevation: 2,
-        centerTitle: true,
+        // backgroundColor: colorScheme.primary,
+        // foregroundColor: colorScheme.onPrimary,
+        elevation: 1,
+        centerTitle: false,
       ),
       textTheme: Typography.blackCupertino,
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -80,10 +80,10 @@ class AppTheme {
       scaffoldBackgroundColor: colorScheme.surface,
       shadowColor: Colors.white.withOpacity(0.5), // 👈 Added for dark theme
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        elevation: 2,
-        centerTitle: true,
+        // backgroundColor: colorScheme.surface,
+        // foregroundColor: colorScheme.onSurface,
+        elevation: 1,
+        centerTitle: false,
       ),
       textTheme: Typography.whiteCupertino,
       elevatedButtonTheme: ElevatedButtonThemeData(

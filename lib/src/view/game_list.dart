@@ -66,27 +66,26 @@ class GameList extends StatelessWidget {
       final padding = themeController.paddingValue.value;
 
       return Scaffold(
-        body: Padding(
+        body: GridView.builder(
+          shrinkWrap: true,
+          itemCount: gameList.length,
           padding: EdgeInsets.all(padding),
-          child: GridView.builder(
-            itemCount: gameList.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-              crossAxisSpacing: padding,
-              mainAxisSpacing: padding,
-              childAspectRatio: 1,
-            ),
-            itemBuilder: (context, index) {
-              final game = gameList[index];
-              return GameCard(
-                title: game['name'],
-                description: game['desc'],
-                icon: game['icon'],
-                gradientColors: game['gradient_color'],
-                onTap: game['route'],
-              );
-            },
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+            crossAxisSpacing: padding,
+            mainAxisSpacing: padding,
+            childAspectRatio: 1,
           ),
+          itemBuilder: (context, index) {
+            final game = gameList[index];
+            return GameCard(
+              title: game['name'],
+              description: game['desc'],
+              icon: game['icon'],
+              gradientColors: game['gradient_color'],
+              onTap: game['route'],
+            );
+          },
         ),
       );
     });

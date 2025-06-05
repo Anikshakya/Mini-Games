@@ -19,27 +19,34 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
   Offset direction = const Offset(1, 0);
   Timer? timer;
   int score = 0;
-  int highScore = 0;
+  int normalHighScore = 0;
+  int hardHighScore = 0;
   bool gameOver = false;
   bool isPaused = false;
+  String difficulty = "Normal";
 
   @override
   void initState() {
     super.initState();
-    _loadHighScore();
+    _loadHighScores();
     startGame();
   }
 
-  void _loadHighScore() async {
+  void _loadHighScores() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      highScore = prefs.getInt('snake_high_score') ?? 0;
+      normalHighScore = prefs.getInt('snake_high_score_normal') ?? 0;
+      hardHighScore = prefs.getInt('snake_high_score_hard') ?? 0;
     });
   }
 
   void _saveHighScore() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('snake_high_score', highScore);
+    if (difficulty == "Hard") {
+      await prefs.setInt('snake_high_score_hard', hardHighScore);
+    } else {
+      await prefs.setInt('snake_high_score_normal', normalHighScore);
+    }
   }
 
   void startGame() {
@@ -51,7 +58,8 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
       isPaused = false;
       generateFood();
       timer?.cancel();
-      timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      int speed = difficulty == "Hard" ? 100 : 200;
+      timer = Timer.periodic(Duration(milliseconds: speed), (timer) {
         if (!isPaused && !gameOver) {
           moveSnake();
         }
@@ -84,9 +92,16 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
       if (snake.contains(newHead)) {
         gameOver = true;
-        if (score > highScore) {
-          highScore = score;
-          _saveHighScore();
+        if (difficulty == "Hard") {
+          if (score > hardHighScore) {
+            hardHighScore = score;
+            _saveHighScore();
+          }
+        } else {
+          if (score > normalHighScore) {
+            normalHighScore = score;
+            _saveHighScore();
+          }
         }
         return;
       }
@@ -116,6 +131,15 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
     });
   }
 
+  void setDifficulty(String newDifficulty) {
+    if (difficulty != newDifficulty) {
+      setState(() {
+        difficulty = newDifficulty;
+        startGame();
+      });
+    }
+  }
+
   @override
   void dispose() {
     timer?.cancel();
@@ -124,31 +148,25 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    // We'll make the game board size square and fit vertically (leaving space for appBar & safe areas)
     final availableHeight = screenHeight - kToolbarHeight - MediaQuery.of(context).padding.top - 60;
-    final gameBoardSize = min(availableHeight, availableHeight);
+    final cellSize = min(screenWidth, availableHeight) / gridSize;
+    final boardSize = cellSize * gridSize;
+
+    final highScore = difficulty == "Hard" ? hardHighScore : normalHighScore;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Snake"),
+        title: const Text("Snake"),
         centerTitle: false,
         actions: [
           Row(
             children: [
-              Text(
-                'Score: ${score.toInt()}',
-                style: TextStyle(
-                ),
-              ),
-              SizedBox(width: 10,),
-              Text(
-                'High Score: ${highScore.toInt()}',
-                style: TextStyle(
-                ),
-              ),
-              SizedBox(width: 10,),
+              Text('Score: $score'),
+              const SizedBox(width: 10),
+              Text('High Score: $highScore'),
+              const SizedBox(width: 10),
             ],
           )
         ],
@@ -159,12 +177,13 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.background,
-              Theme.of(context).colorScheme.background.withOpacity(0.8),
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withOpacity(0.8),
             ],
           ),
         ),
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onVerticalDragUpdate: (details) {
             if (details.delta.dy > 0) {
               changeDirection(const Offset(0, 1));
@@ -181,19 +200,16 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
           },
           child: Stack(
             children: [
-              // Centered game board & game over message
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: gameBoardSize,
-                      height: gameBoardSize,
+                      width: boardSize,
+                      height: boardSize,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor),
                           color: Colors.green[100],
-                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.2),
@@ -203,7 +219,12 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
                           ],
                         ),
                         child: CustomPaint(
-                          painter: SnakePainter(snake: snake, food: food, gameOver: gameOver),
+                          painter: SnakePainter(
+                            snake: snake,
+                            food: food,
+                            gameOver: gameOver,
+                            cellSize: cellSize,
+                          ),
                         ),
                       ),
                     ),
@@ -227,9 +248,10 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
                             Text(
                               'Game Over! 😢',
                               style: GoogleFonts.poppins(
-                                  fontSize: 28,
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold),
+                                fontSize: 28,
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             ElevatedButton.icon(
@@ -243,13 +265,28 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
                   ],
                 ),
               ),
-              // Pause/Resume button top right
               Positioned(
                 top: 8,
                 right: 8,
-                child: IconButton(
-                  onPressed: togglePause,
-                  icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: togglePause,
+                      icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
+                    ),
+                    const SizedBox(width: 4),
+                    ChoiceChip(
+                      label: const Text("Normal"),
+                      selected: difficulty == "Normal",
+                      onSelected: (_) => setDifficulty("Normal"),
+                    ),
+                    const SizedBox(width: 4),
+                    ChoiceChip(
+                      label: const Text("Hard"),
+                      selected: difficulty == "Hard",
+                      onSelected: (_) => setDifficulty("Hard"),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -264,16 +301,18 @@ class SnakePainter extends CustomPainter {
   final List<Offset> snake;
   final Offset food;
   final bool gameOver;
+  final double cellSize;
 
-  SnakePainter({required this.snake, required this.food, required this.gameOver});
+  SnakePainter({
+    required this.snake,
+    required this.food,
+    required this.gameOver,
+    required this.cellSize,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = size.width / 20;
-
-    final foodPaint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.fill;
+    final foodPaint = Paint()..color = Colors.red;
     canvas.drawCircle(
       Offset(food.dx * cellSize + cellSize / 2, food.dy * cellSize + cellSize / 2),
       cellSize / 2,
@@ -282,8 +321,7 @@ class SnakePainter extends CustomPainter {
 
     for (int i = 0; i < snake.length; i++) {
       final paint = Paint()
-        ..color = i == 0 ? Colors.green[800]! : Colors.green[400]!
-        ..style = PaintingStyle.fill;
+        ..color = i == 0 ? Colors.green[800]! : Colors.green[400]!;
       canvas.drawRect(
         Rect.fromLTWH(
           snake[i].dx * cellSize,
@@ -299,10 +337,7 @@ class SnakePainter extends CustomPainter {
       final overlayPaint = Paint()
         ..color = Colors.black.withOpacity(0.5)
         ..style = PaintingStyle.fill;
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        overlayPaint,
-      );
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), overlayPaint);
     }
   }
 
