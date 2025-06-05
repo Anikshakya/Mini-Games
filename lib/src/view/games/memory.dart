@@ -229,7 +229,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Memory Match 🧠',
+          'Memory Match 🧠', style: TextStyle(fontSize: 16)
         ),
         actions: [
           IconButton(

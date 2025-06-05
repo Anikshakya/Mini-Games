@@ -148,7 +148,7 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Rock Paper Scissors ✊✋✌️", style: TextStyle(fontSize: 16),),
+        title: const Text("Rock Paper Scissors ✊✋✌️", style: TextStyle(fontSize: 16)),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

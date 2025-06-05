@@ -220,7 +220,7 @@ class _DinoGameState extends State<DinoGame> with SingleTickerProviderStateMixin
     return Scaffold(
       backgroundColor: _getSkyColor(),
       appBar: AppBar(
-        title: Text("Dino Jump"),
+        title: Text("Dino Jump", style: TextStyle(fontSize: 16),),
         centerTitle: false,
         actions: [
           Row(

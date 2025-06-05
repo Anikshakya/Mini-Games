@@ -51,7 +51,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Tic Tac Toe',
+          'Tic Tac Toe', style: TextStyle(fontSize: 16)
         ),
         actions: [
           IconButton(

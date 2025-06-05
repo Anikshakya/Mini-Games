@@ -158,7 +158,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Snake"),
+        title: const Text("Snake", style: TextStyle(fontSize: 16),),
         centerTitle: false,
         actions: [
           Row(
