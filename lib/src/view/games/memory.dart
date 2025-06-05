@@ -10,7 +10,7 @@ class MemoryGameScreen extends StatefulWidget {
   const MemoryGameScreen({super.key});
 
   @override
-  _MemoryGameScreenState createState() => _MemoryGameScreenState();
+  State<MemoryGameScreen> createState() => _MemoryGameScreenState();
 }
 
 class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProviderStateMixin {
@@ -284,8 +284,8 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                splashColor: theme.colorScheme.primary.withOpacity(0.3),
-                                highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+                                splashColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                highlightColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.only(
                                   topLeft: isCornerTopLeft ? const Radius.circular(12) : Radius.zero,
                                   topRight: isCornerTopRight ? const Radius.circular(12) : Radius.zero,
@@ -303,11 +303,11 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                                         gradient: LinearGradient(
                                           colors: cardFlips[index]
                                               ? [theme.colorScheme.surface, theme.colorScheme.surfaceContainer]
-                                              : [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.85)],
+                                              : [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.85)],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
-                                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
+                                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.4)),
                                         borderRadius: BorderRadius.only(
                                           topLeft: isCornerTopLeft ? const Radius.circular(12) : Radius.zero,
                                           topRight: isCornerTopRight ? const Radius.circular(12) : Radius.zero,
@@ -316,7 +316,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: theme.colorScheme.shadow.withOpacity(0.15),
+                                            color: theme.colorScheme.shadow.withValues(alpha: 0.15),
                                             blurRadius: 8,
                                             offset: const Offset(0, 3),
                                           ),
@@ -394,13 +394,13 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
       borderRadius: BorderRadius.circular(radius),
       boxShadow: [
         BoxShadow(
-          color: theme.shadowColor.withOpacity(0.1),
+          color: theme.shadowColor.withValues(alpha: 0.1),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
       ],
       border: Border.all(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         width: 1,
       ),
     ),
@@ -410,12 +410,12 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
         Text(
           title,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          '$value',
+          value.toString(),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: color,

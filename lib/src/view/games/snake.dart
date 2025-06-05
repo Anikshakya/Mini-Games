@@ -178,7 +178,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
             ],
           ),
         ),
@@ -212,7 +212,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
                           color: Colors.green[100],
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -237,7 +237,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -335,7 +335,7 @@ class SnakePainter extends CustomPainter {
 
     if (gameOver) {
       final overlayPaint = Paint()
-        ..color = Colors.black.withOpacity(0.5)
+        ..color = Colors.black.withValues(alpha: 0.5)
         ..style = PaintingStyle.fill;
       canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), overlayPaint);
     }

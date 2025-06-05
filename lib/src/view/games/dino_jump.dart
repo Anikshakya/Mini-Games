@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:juju_games/src/app_utils/read_write.dart';
 
 class DinoGame extends StatefulWidget {
-  const DinoGame({Key? key}) : super(key: key);
+  const DinoGame({super.key});
 
   @override
   State<DinoGame> createState() => _DinoGameState();

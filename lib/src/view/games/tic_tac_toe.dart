@@ -82,7 +82,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                             ? winner.isNotEmpty
                                 ? colorScheme.primaryContainer
                                 : colorScheme.secondaryContainer
-                            : colorScheme.surfaceVariant,
+                            : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -135,10 +135,10 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                                 color: Colors.transparent,
                                 child: InkWell(
                                   splashColor: currentPlayer == 'X'
-                                      ? colorScheme.primary.withOpacity(0.3)
-                                      : colorScheme.secondary.withOpacity(0.3),
+                                      ? colorScheme.primary.withValues(alpha: 0.3)
+                                      : colorScheme.secondary.withValues(alpha: 0.3),
                                   highlightColor:
-                                      colorScheme.surfaceTint.withOpacity(0.1),
+                                      colorScheme.surfaceTint.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.only(
                                     topLeft: isCornerTopLeft
                                         ? const Radius.circular(12)
@@ -158,9 +158,9 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                                     duration: const Duration(milliseconds: 200),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                        color: colorScheme.outline.withOpacity(0.2),
+                                        color: colorScheme.outline.withValues(alpha: 0.2),
                                       ),
-                                      color: colorScheme.surfaceVariant,
+                                      color: colorScheme.surfaceContainerHighest,
                                       borderRadius: BorderRadius.only(
                                         topLeft: isCornerTopLeft
                                             ? const Radius.circular(12)
@@ -273,13 +273,13 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: theme.shadowColor.withOpacity(0.08),
+          color: theme.shadowColor.withValues(alpha: 0.08),
           blurRadius: 12,
           offset: const Offset(0, 6),
         ),
       ],
       border: Border.all(
-        color: theme.colorScheme.outline.withOpacity(0.1),
+        color: theme.colorScheme.outline.withValues(alpha: 0.1),
       ),
     ),
     child: Column(
@@ -288,7 +288,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
         Text(
           title,
           style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -307,7 +307,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
