@@ -185,7 +185,7 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen>
                       animation: _animation,
                       builder: (context, _) {
                         double slide = (1 - _animation.value) * 100;
-                        if (!_controller.isCompleted) {
+                        if (_readyTimer!.isActive != true ) {
                           // During animation - show both moving toward center
                           return Stack(
                             children: [
@@ -205,22 +205,6 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen>
                               ),
                             ],
                           );
-                        } else if (showResult) {
-                          // After animation completes and we show the result
-                          final isDraw = result == 'Draw! 🤝';
-                          if (isDraw) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(computerChoice, style: const TextStyle(fontSize: 48)),
-                                const SizedBox(width: 24),
-                                Text(playerChoice, style: const TextStyle(fontSize: 48)),
-                              ],
-                            );
-                          } else {
-                            String winnerEmoji = result.contains('You Win') ? playerChoice : computerChoice;
-                            return Text(winnerEmoji, style: const TextStyle(fontSize: 64));
-                          }
                         } else {
                           return const SizedBox();
                         }
