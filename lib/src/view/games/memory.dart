@@ -405,7 +405,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
       ),
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           title,
