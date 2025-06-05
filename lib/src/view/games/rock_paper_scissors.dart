@@ -233,20 +233,28 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: options.map((option) {
+                final isSelected = option == playerChoice;
+
                 return ElevatedButton(
                   onPressed: playerChoice.isEmpty ? () => playGame(option) : null,
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
                     padding: const EdgeInsets.all(20),
-                    elevation: 4,
+                    elevation: isSelected ? 8 : 4,
+                    backgroundColor: isSelected ? Colors.amber : null,
+                    side: isSelected ? const BorderSide(color: Colors.orange, width: 3) : null,
                   ),
                   child: Text(
                     option,
-                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.black : null,
+                    ),
                   ),
                 );
               }).toList(),
             ),
+
             const SizedBox(height: 24),
             Visibility(
               visible: playerChoice.isNotEmpty,
