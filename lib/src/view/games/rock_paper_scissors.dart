@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,19 +10,62 @@ class RockPaperScissorsScreen extends StatefulWidget {
   State<RockPaperScissorsScreen> createState() => _RockPaperScissorsScreenState();
 }
 
-class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
+class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen>
+    with SingleTickerProviderStateMixin {
   String playerChoice = '';
   String computerChoice = '';
   String result = '';
+  String readyMessage = '';
   final List<String> options = ['✊', '✋', '✌️'];
   int playerWins = 0;
   int computerWins = 0;
   int highScore = 0;
 
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  bool showResult = false;
+  Timer? _readyTimer;
+
   @override
   void initState() {
     super.initState();
     _loadHighScore();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack),
+    );
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          setState(() {
+            showResult = true;
+          });
+          if (result.contains('You Win')) {
+            playerWins++;
+            if (playerWins > highScore) {
+              highScore = playerWins;
+              _saveHighScore();
+            }
+          } else if (result.contains('Computer Wins')) {
+            computerWins++;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _readyTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadHighScore() async {
@@ -39,39 +83,54 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
   void playGame(String choice) {
     if (playerChoice.isNotEmpty) return;
 
+    _readyTimer?.cancel();
+
+    final computer = options[Random().nextInt(options.length)];
     setState(() {
       playerChoice = choice;
-      computerChoice = options[Random().nextInt(options.length)];
-      result = determineWinner(playerChoice, computerChoice);
+      computerChoice = computer;
+      result = determineWinner(choice, computer);
+      showResult = false;
+      readyMessage = '';
+    });
 
-      if (result == 'You Win! 🎉🎊') {
-        playerWins++;
-        if (playerWins > highScore) {
-          highScore = playerWins;
-          _saveHighScore();
-        }
-      } else if (result == 'Computer Wins!') {
-        computerWins++;
+    List<String> readyWords = ["Rock", "Paper", "Sissors", "Shoot!!"];
+    int index = 0;
+    _readyTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (index < readyWords.length) {
+        setState(() {
+          readyMessage = readyWords[index];
+        });
+        index++;
+      } else {
+        timer.cancel();
+        setState(() {
+          readyMessage = '';
+        });
+        _controller.forward(from: 0);
       }
     });
   }
 
   String determineWinner(String player, String computer) {
-    if (player == computer) return 'Draw!';
+    if (player == computer) return 'Draw! 🤝';
 
     if ((player == '✊' && computer == '✌️') ||
         (player == '✋' && computer == '✊') ||
         (player == '✌️' && computer == '✋')) {
       return 'You Win! 🎉🎊';
     }
-    return 'Computer Wins!';
+    return 'Computer Wins! 💻👑';
   }
 
   void resetGame() {
+    _readyTimer?.cancel();
     setState(() {
       playerChoice = '';
       computerChoice = '';
       result = '';
+      readyMessage = '';
+      showResult = false;
     });
   }
 
@@ -79,29 +138,21 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.onSurface;
-    final winColor = Colors.green[700];
-    final loseColor = Colors.red[700];
-    final drawColor = Colors.blue[700];
 
     Color getResultColor() {
-      if (result.contains('Win') && !result.contains('Computer')) return winColor ?? Colors.green;
-      if (result.contains('Draw')) return drawColor ?? Colors.blue;
-      if (result.contains('Computer Wins')) return loseColor ?? Colors.red;
+      if (result.contains('You Win')) return Colors.green;
+      if (result.contains('Draw')) return Colors.blue;
+      if (result.contains('Computer Wins')) return Colors.red;
       return textColor;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Rock Paper Scissors ✊✋✌️"),
+        title: const Text("Rock Paper Scissors ✊✋✌️", style: TextStyle(fontSize: 16),),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Center(
-              child: Text(
-                'High Score: $highScore',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
+            child: Center(child: Text('High Score: $highScore')),
           ),
         ],
       ),
@@ -110,38 +161,96 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Result message
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+              duration: const Duration(milliseconds: 300),
               child: Text(
-                result.isNotEmpty ? result : 'Make your move!',
-                key: ValueKey<String>(result),
+                readyMessage.isNotEmpty
+                    ? readyMessage
+                    : (showResult ? result : 'Get Ready...'),
+                key: ValueKey<String>(readyMessage + result + showResult.toString()),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: getResultColor(),
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-
-            // Choices display
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 100,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (playerChoice.isNotEmpty && computerChoice.isNotEmpty)
+                    AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, _) {
+                        double slide = (1 - _animation.value) * 100;
+                        if (!_controller.isCompleted) {
+                          // During animation - show both moving toward center
+                          return Stack(
+                            children: [
+                              Positioned(
+                                left: MediaQuery.of(context).size.width / 2 - 100 - slide,
+                                child: Text(
+                                  computerChoice,
+                                  style: const TextStyle(fontSize: 48),
+                                ),
+                              ),
+                              Positioned(
+                                right: MediaQuery.of(context).size.width / 2 - 100 - slide,
+                                child: Text(
+                                  playerChoice,
+                                  style: const TextStyle(fontSize: 48),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else if (showResult) {
+                          // After animation completes and we show the result
+                          final isDraw = result == 'Draw! 🤝';
+                          if (isDraw) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(computerChoice, style: const TextStyle(fontSize: 48)),
+                                const SizedBox(width: 24),
+                                Text(playerChoice, style: const TextStyle(fontSize: 48)),
+                              ],
+                            );
+                          } else {
+                            String winnerEmoji = result.contains('You Win') ? playerChoice : computerChoice;
+                            return Text(winnerEmoji, style: const TextStyle(fontSize: 64));
+                          }
+                        } else {
+                          return const SizedBox();
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ChoiceDisplay(label: 'Computer ($computerWins Wins)', choice: computerChoice, color: textColor),
-                _ChoiceDisplay(label: 'You ($playerWins Wins)', choice: playerChoice, color: textColor),
+                _ChoiceDisplay(
+                  label: 'Computer ($computerWins Wins)',
+                  choice: computerChoice,
+                  color: textColor,
+                ),
+                _ChoiceDisplay(
+                  label: 'You ($playerWins Wins)',
+                  choice: playerChoice,
+                  color: textColor,
+                ),
               ],
             ),
-            const SizedBox(height: 52),
-
-            // Buttons for choices
+            const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: options.map((option) {
-                final isDisabled = playerChoice.isNotEmpty;
                 return ElevatedButton(
-                  onPressed: isDisabled ? null : () => playGame(option),
+                  onPressed: playerChoice.isEmpty ? () => playGame(option) : null,
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
                     padding: const EdgeInsets.all(20),
@@ -154,10 +263,7 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 24),
-
-            // Play Again Button (animated but doesn't shift layout)
             Visibility(
               visible: playerChoice.isNotEmpty,
               maintainSize: true,
@@ -172,7 +278,9 @@ class _RockPaperScissorsScreenState extends State<RockPaperScissorsScreen> {
                   onPressed: resetGame,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(140, 48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -201,12 +309,10 @@ class _ChoiceDisplay extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          choice.isNotEmpty ? choice : '❓',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: color),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
