@@ -17,6 +17,20 @@ class GameList extends StatelessWidget {
 
   final List<Map<String, dynamic>> gameList = [
     {
+      "name": "Snake Game 🐍",
+      "desc": "Classic snake game",
+      "icon": Icons.settings_ethernet,
+      "gradient_color": [Colors.teal[600]!, Colors.teal[400]!],
+      "route": () => Get.to(() => const SnakeGameScreen()),
+    },
+    {
+      "name": "Space Shooter 🚀",
+      "desc": "Shoot asteroids in space",
+      "icon": Icons.rocket,
+      "gradient_color": [Colors.indigo[600]!, Colors.indigo[400]!],
+      "route": () => Get.to(() => const SpaceShooterScreen()),
+    },
+    {
       "name": "Dino Jump 🦖",
       "desc": "Jump over obstacles",
       "icon": Icons.directions_run,
@@ -43,20 +57,6 @@ class GameList extends StatelessWidget {
       "icon": Icons.gesture,
       "gradient_color": [Colors.green[600]!, Colors.green[400]!],
       "route": () => Get.to(() => const RockPaperScissorsScreen()),
-    },
-    {
-      "name": "Snake Game 🐍",
-      "desc": "Classic snake game",
-      "icon": Icons.settings_ethernet,
-      "gradient_color": [Colors.teal[600]!, Colors.teal[400]!],
-      "route": () => Get.to(() => const SnakeGameScreen()),
-    },
-    {
-      "name": "Space Shooter 🚀",
-      "desc": "Shoot asteroids in space",
-      "icon": Icons.rocket,
-      "gradient_color": [Colors.indigo[600]!, Colors.indigo[400]!],
-      "route": () => Get.to(() => const SpaceShooterScreen()),
     },
   ];
 
