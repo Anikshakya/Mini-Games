@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:juju_games/src/app_config/app_theme/app_theme.dart';
 
 class TicTacToeScreen extends StatefulWidget {
   const TicTacToeScreen({super.key});
@@ -71,9 +72,9 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
               children: [
                 const SizedBox(height: 60),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildScoreCard('❌ Wins', xWins, colorScheme.primary),
+                    _buildScoreCard('❌ Wins', xWins.toString(), colorScheme.primary),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.all(16),
@@ -91,7 +92,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                                 ? 'Winner: $winner 🏆'
                                 : 'Draw! 🤝'
                             : 'Turn: $currentPlayer 🎮',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           color: gameOver
                               ? winner.isNotEmpty
                                   ? colorScheme.onPrimaryContainer
@@ -100,7 +101,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                         ),
                       ),
                     ),
-                    _buildScoreCard('⭕ Wins', oWins, colorScheme.secondary),
+                    _buildScoreCard('⭕ Wins', oWins.toString(), colorScheme.secondary),
                   ],
                 ),
                 const SizedBox(height: 50),
@@ -263,65 +264,50 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
     );
   }
 
- Widget _buildScoreCard(String title, int value, Color color) {
+ Widget _buildScoreCard(String title, String value, Color color) {
   final theme = Theme.of(context);
+  final radius = AppTheme.defaultRadius;
+  final padding = AppTheme.defaultPadding;
 
   return Container(
-    padding: const EdgeInsets.all(16),
+    padding: EdgeInsets.symmetric(horizontal: padding / 2, vertical: padding / 2.5),
     decoration: BoxDecoration(
       color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(radius),
       boxShadow: [
         BoxShadow(
-          color: theme.shadowColor.withValues(alpha: 0.08),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
+          color: theme.shadowColor.withValues(alpha: 0.1),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
         ),
       ],
       border: Border.all(
-        color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.15),
+        width: 1,
       ),
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           title,
-          style: theme.textTheme.labelLarge?.copyWith(
+          style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '$value',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.star_rounded,
-                size: 18,
-                color: color,
-              ),
-            ),
-          ],
+        const SizedBox(height: 4),
+        Text(
+          value.toString(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ],
     ),
   );
 }
+
 
 
   void _handleTap(int row, int col) {
