@@ -157,8 +157,8 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
   }
 
   void addPipe() {
-    final topHeight = 0.02 + (0.48 * Random().nextDouble());
-    final gapSize = 0.1 + (0.4 * Random().nextDouble());
+    final topHeight = 0.06 + (0.48 * Random().nextDouble());
+    final gapSize = 0.2 + (0.4 * Random().nextDouble());
     final gapY = topHeight - 1 + gapSize / 2;
     final bottomHeight = 1 - topHeight - gapSize;
 
@@ -240,6 +240,28 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
         return true;
       },
       child: Scaffold(
+        appBar: AppBar(
+          title: Text("Flappy Plane", style: TextStyle(fontSize: 16),),
+          centerTitle: false,
+          actions: [
+            Row(
+              children: [
+                Text(
+                  'Score: ${score.toInt()}',
+                  style: TextStyle(
+                  ),
+                ),
+                SizedBox(width: 10,),
+                Text(
+                  'High Score: ${highScore.toInt()}',
+                  style: TextStyle(
+                  ),
+                ),
+                SizedBox(width: 10,),
+              ],
+            )
+          ],
+        ),
         backgroundColor: Colors.blue.shade200,
         body: GestureDetector(
           onTap: jump,
@@ -334,45 +356,6 @@ class _FlappyBirdScreenState extends State<FlappyBirdScreen> {
                     ),
                     child: const Icon(Icons.arrow_forward_ios, color: Color.fromARGB(255, 212, 161, 83)),
                   ),
-                ),
-              ),
-              Positioned(
-                top: 50,
-                left: 0,
-                right: 0,
-                child: Column(
-                  children: [
-                    Text(
-                      'High Score: $highScore',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 5,
-                            color: Colors.black,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      'Score: $score',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 5,
-                            color: Colors.black,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
               if (gameStarted && !gameOver)
