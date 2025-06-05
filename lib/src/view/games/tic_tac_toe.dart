@@ -241,13 +241,13 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> with SingleTickerProv
                                   ),
                             ),
                             const SizedBox(height: 12),
-                            ElevatedButton.icon(
+                            FilledButton.icon(
+                              icon: const Icon(Icons.replay),
+                              label: const Text('Play Again'),
                               onPressed: _resetGame,
-                              icon: const Icon(Icons.refresh),
-                              label: const Text("Play Again"),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                textStyle: const TextStyle(fontSize: 16),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(140, 48),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
                             ),
                             const SizedBox(height: 32),
